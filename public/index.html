@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Nutrition</title>
+        <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="./stylesheets/style.css" />
+        <link rel="icon" type="image/png" href="./images/favicon.png" />
+    </head>
+    <body>
+        <div id="app">
+            <!-- ADD FORM -->
+            <transition v-if="showAddForm && !displayTab.hist" name="modal">
+                <div class="modal-mask">
+                    <div class="modal-wrapper">
+                        <div class="modal-container">
+            
+                            <div class="modal-header">
+                                <div v-if="displayTab.common">
+                                    <h1 class="modal-title">Add to Database</h1>
+                                    <p style="font-size:10px">*If unknown enter 0</p>
+                                </div>
+                                <div v-if="displayTab.daily">
+                                    <h1 class="modal-title">Add to Daily</h1>
+                                </div>
+                            </div>
+                            <div class="modal-body">
+                                <div v-if="error">
+                                    <p style="font-size:10px">{{ message }}</p>
+                                </div>
+                                <div v-if="displayTab.daily">
+                                    <form @keyup.prevent="calcInfo">
+                                        <label>Name: </label><input type="text" v-model="food.name" @click.prevent="setError" /><br>
+                                        <label>Servings: </label><input type="number" step=".1" min="0" v-model="multiplier" /><br>
+                                        <label>Serving Size: {{ info }}</label><br>
+                                        <input type="submit" @click.prevent="add" />
+                                    </form>
+                                </div>
+                                <div v-if="displayTab.common">
+                                    <label>Name: </label><input type="text" v-model="food.name" /><br>
+                                    <label>Serving Size: </label><input type="number" step=".1" min="0" v-model="food.servingSize" /><br>
+                                    <label>Units: </label><input type="text" v-model="food.units" /><br>
+                                    <label>Calories per Serving: </label><input type="number" step=".1" min="0" v-model="food.calories" /><br>
+                                    <label>Fat: </label><input type="number" step=".1" min="0" v-model="food.fat" /><br>
+                                    <label>Cholesterol: </label><input type="number" step=".1" min="0" v-model="food.chol" /><br>
+                                    <label>Sodium: </label><input type="number" step=".1" min="0" v-model="food.sodium" /><br>
+                                    <label>Carbs: </label><input type="number" step=".1" min="0" v-model="food.carbs" /><br>
+                                    <label class="tab">Fiber: </label><input type="number" step=".1" min="0" v-model="food.fiber" /><br>
+                                    <label class="tab">Sugars: </label><input type="number" step=".1" min="0" v-model="food.sugars" /><br>
+                                    <label>Protein: </label><input type="number" step=".1" min="0" v-model="food.proteins" /><br>
+                                    <input type="submit" @click.prevent="add" />
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <input @click="closeForm" type="button" class="close" value="Close" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+            
+            <div class="nav">
+                <a href="http://hkevana.com">hkevana.com</a>
+                <ul>
+                    <li @click="display(0)">Daily</li> |
+                    <li @click="display(1)">Database</li> |
+                    <li @click="display(2)">History</li>
+                </ul>
+            </div>
+            <!-- control buttons -->
+            <div class = control>
+                <ul>
+                    <li @click="toggleAddForm">add</li>
+                    <li>edit</li>
+                    <li @click="clear">clear</li>
+                </ul>
+            </div>
+            <div id="facts" v-if="displayTab.common">
+                <h1>Food Database</h1>
+                <table>
+                    
+                    <tr>
+                        <th>Name</th><th>Serving Size</th><th>Calories</th><th>Fat</th><th>Choleserol</th><th>Sodium</th><th>Carbs</th><th>Fiber</th><th>Sugar</th><th>Protein</th>
+                    </tr>
+                    <tr class="row" v-for="obj in sortedFacts" @click="remove(obj.name)">
+                        <td class="firstCol">{{ obj.name }}</td><td> {{ obj.servingSize }} {{ obj.units }}</td><td>{{ obj.calories }}</td><td>{{ obj.fat }}</td><td>{{ obj.chol }}</td><td>{{ obj.sodium }}</td><td>{{ obj.carbs }}</td><td>{{ obj.fiber }}</td><td>{{ obj.sugars }}</td><td>{{ obj.proteins }}</td>
+                    </tr>
+                    
+                </table>
+            </div>
+            <div id="daily" v-if="displayTab.daily">
+                <h1>Daily Nutrition</h1>
+                
+                <div class="goals">
+                    <div class="bar_container"> 
+                        <div class="bar" id="calories">Calories: {{ totals.calories }} / {{ goals.calories }} cal</div>
+                    </div>
+                    <div class="bar_container"> 
+                        <div class="bar" id="fat">Fat: {{ totals.fat }} / {{ goals.fat }} g</div>
+                    </div>
+                    <div class="bar_container"> 
+                        <div class="bar" id="chol">Cholesterol: {{ totals.chol }} / {{ goals.chol }} mg</div>
+                    </div>
+                    <div class="bar_container"> 
+                        <div class="bar" id="sodium">Sodium: {{ totals.sodium }} / {{ goals.sodium }} mg</div>
+                    </div>
+                    <div class="bar_container"> 
+                        <div class="bar" id="carbs">Carbs: {{ totals.carbs }} / {{ goals.carbs }} g</div>
+                    </div>
+                    <div class="bar_container"> 
+                        <div class="bar" id="fiber">Fiber: {{ totals.fiber }} / {{ goals.fiber }} g</div>
+                    </div>
+                    <div class="bar_container"> 
+                        <div class="bar" id="sugars">Sugars: {{ totals.sugars }} / {{ goals.sugars }} g</div>
+                    </div>
+                    <div class="bar_container"> 
+                        <div class="bar" id="proteins">Proteins: {{ totals.proteins }} / {{ goals.proteins }} g</div>
+                    </div>
+                </div>
+                
+                <table>
+                    <caption>{{ date }}</caption>
+                    <tr>
+                        <th>Name</th><th>Servings</th><th>Calories</th><th>Fat</th><th>Choleserol</th><th>Sodium</th><th>Carbs</th><th>Fiber</th><th>Sugar</th><th>Protein</th>
+                    </tr>
+                    <tr class="row" v-for="obj in daily" @click="remove(obj.name)">
+                        <td class="firstCol">{{ obj.name }}</td><td> {{ obj.servingSize }} {{ obj.units }}</td><td>{{ obj.calories }}</td><td>{{ obj.fat }}</td><td>{{ obj.chol }}</td><td>{{ obj.sodium }}</td><td>{{ obj.carbs }}</td><td>{{ obj.fiber }}</td><td>{{ obj.sugars }}</td><td>{{ obj.proteins }}</td>
+                    </tr>
+                    
+                </table>
+            </div>
+            <div id="history" v-if="displayTab.hist">
+                <h1>History</h1>
+                
+                <table>
+                    <tr>
+                        <th>Date</th><th>Calories</th><th>Fat</th><th>Choleserol</th><th>Sodium</th><th>Carbs</th><th>Fiber</th><th>Sugar</th><th>Protein</th>
+                    </tr>
+                    <tr class="row" v-for="obj in hist" @click="remove(obj.name)">
+                        <td class="firstCol">{{ obj.date }}</td><td>{{ obj.calories }}</td><td>{{ obj.fat }}</td><td>{{ obj.chol }}</td><td>{{ obj.sodium }}</td><td>{{ obj.carbs }}</td><td>{{ obj.fiber }}</td><td>{{ obj.sugars }}</td><td>{{ obj.proteins }}</td>
+                    </tr>
+                    
+                </table>
+            </div>
+        </div>
+    </body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js" integrity="sha256-mpnrJ5DpEZZkwkE1ZgkEQQJW/46CSEh/STrZKOB/qoM=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.2/dist/vue.js"></script>
+    <script src="./javascripts/script.js"></script>
+</html>
